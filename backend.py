@@ -102,16 +102,16 @@ class BackendEngine:
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
                             
         try: cursor.execute("ALTER TABLE influencers ADD COLUMN platform TEXT DEFAULT 'Lovegobuy'")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE influencers ADD COLUMN invite_btn_text TEXT")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE influencers ADD COLUMN tutorial_btn_text TEXT")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         
         try: cursor.execute("ALTER TABLE influencers ADD COLUMN role TEXT DEFAULT 'tier2'")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE influencers ADD COLUMN parent_id INTEGER DEFAULT 0")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
                             
         cursor.execute('''CREATE TABLE IF NOT EXISTS products (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
