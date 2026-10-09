@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 修改点 1：使用变量动态生成网页标题，解决实时报表无法区分达人的问题 -->
+    <title>Fieyear - Your Trusted Sheet with QC (Yanisito(fieyearn7))</title>
+    <link rel="icon" href="./logo.png" type="image/png">
+    <link rel="stylesheet" href="./style.css">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BFH3VPLTPC"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      <!-- 修改点 2：在 GA4 全局配置中注入达人名称，绑定所有后续事件 -->
+      gtag('config', 'G-BFH3VPLTPC', {
+          'influencer_name': 'Yanisito(fieyearn7)'
+      });
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="sticky-header">
+            
+            <header class="header-container" v-if="!currentCategory">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" v-model="searchQuery" placeholder="Search all products..." @keyup.enter="trackSearch" @blur="trackSearch">
+                </div>
+                
+                <div class="action-buttons">
+                    <!-- 已移除前面写死的 emoji 图标，完全由后台变量决定 -->
+                    <a href="https://www.lovegobuy.com/?invite_code=YANISSITO" class="btn btn-invite" target="_blank">
+                        <span>🎁 S'inscrire sur Lovegobuy pour -30%</span>
+                    </a>
+                    <a href="#" class="btn btn-tutorial" target="_blank">
+                        <span>📚 Tutoriel</span>
+                    </a>
+                </div>
+            </header>
+
+            <div class="category-page-header" v-else>
+                <a href="?" class="btn-back-home" @click.prevent="goHome">
+                    <span>⬅️</span> Back
+                </a>
+                
+                <h1 class="category-title">{{ currentCategory }}</h1>
+                
+                <div class="cat-search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" v-model="catSearchQuery" :placeholder="'Search in ' + currentCategory + '...'">
+                </div>
+            </div>
+
+            <nav class="filter-container" v-if="!currentCategory">
+                <button @click="goHome" :class="['filter-btn', { active: currentCategory === '' }]">
+                    <span class="cat-icon">🏠</span> ALL
+                </button>
+                <button v-for="cat in dynamicCategories" :key="cat" @click="jumpToCategoryPage(cat)" class="filter-btn">
+                    <span class="cat-icon" v-if="getCategoryIcon(cat)">{{ getCategoryIcon(cat) }}</span> {{ cat }}
+                </button>
+            </nav>
+        </div>
+
+        <main class="grid-container">
+            <div v-for="(product, index) in filteredProducts" :key="index" class="product-card" :data-letter="getProductLetter(product.name)">
+                <a :href="product.productLink" target="_blank" style="display:block;" @click="trackProductClick(product)">
+                    <div class="product-content">
+                        <div class="image-box">
+                            <img :src="product.imgUrl" :alt="product.name" class="product-img" loading="lazy">
+                        </div>
+                        <div class="info-box">
+                            <h3 class="product-title">{{ product.name }}</h3>
+                            <p class="product-price">{{ product.symbol || '€' }}{{ product.price }}</p>
+                        </div>
+                    </div>
+                </a>
+                <div class="qc-btn-container" @click.stop>
+                    <a v-if="product.qcUrls && product.qcUrls.length > 0" :href="'qc.html?id=' + product.id" class="btn-check-more" @click="handleQcClick(product)">
+                        <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; margin-bottom:-2px; vertical-align: middle;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Check QC ({{ product.qcUrls.length }})
+                    </a>
+                </div>
+            </div>
+
+            <div v-if="filteredProducts.length === 0" style="text-align: center; grid-column: 1 / -1; padding: 60px 20px; color: #909399;">
+                <h2 style="font-size: 24px; margin-bottom: 10px;">No products found 🛒</h2>
+                <p>Try adjusting your search keywords.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        
+        let categoryData = [];
+        try {
+            const injectedData = [{"name": "NOUVEAUTÉ(22/08)"}, {"name": "HOT"}, {"name": "SHOES"}, {"name": "Maillot"}, {"name": "RUNNING"}, {"name": "ETE"}, {"name": "VETEMENT"}, {"name": "VESTE"}, {"name": "ACCESSOIRE"}];
+            if (Array.isArray(injectedData)) {
+                categoryData = injectedData;
+            }
+        } catch (e) {
+            console.warn("分类数据加载失败:", e);
+        }
+
+        createApp({
+            data() {
+                return {
+                    products: [], 
+                    searchQuery: '',      
+                    catSearchQuery: '',   
+                    currentCategory: ''
+                }
+            },
+            computed: {
+                dynamicCategories() { return categoryData.map(c => c.name); },
+                filteredProducts() {
+                    if (!this.currentCategory) {
+                        const globalQ = (this.searchQuery || '').toLowerCase().trim();
+                        if (globalQ) {
+                            return this.products.filter(p => (p.name || '').toLowerCase().includes(globalQ));
+                        }
+                        return this.products;
+                    }
+                    
+                    let result = this.products.filter(p => p.category === this.currentCategory);
+                    
+                    const catQ = (this.catSearchQuery || '').toLowerCase().trim();
+                    if (catQ) {
+                        result = result.filter(p => (p.name || '').toLowerCase().includes(catQ));
+                    }
+                    
+                    return result;
+                }
+            },
+            methods: {
+                jumpToCategoryPage(cat) {
+                    window.location.href = "?c=" + encodeURIComponent(cat);
+                },
+                goHome() {
+                    window.location.href = window.location.pathname;
+                },
+                getCategoryIcon(cat) {
+                    if(!cat) return '✨';
+                    const iconMap = {'HOT ITEMS': '🔥', 'SHOES': '👟', 'ETE': '☀️', 'RUNNING': '🏃', 'VETEMENT': '👕', 'VESTE': '🧥', 'ACCESSOIRE': '⌚'};
+                    return iconMap[cat.toUpperCase()] || '✨';
+                },
+                getProductLetter(name) {
+                    if (!name) return '#';
+                    const firstChar = name.charAt(0).toUpperCase();
+                    return /[A-Z]/.test(firstChar) ? firstChar : '#';
+                },
+                trackProductClick(product) {
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'product_interested', {
+                            event_category: 'engagement',
+                            item_list_name: this.currentCategory || 'Global Search',
+                            item_id: product.id || product.name,
+                            item_name: product.name,
+                            price: parseFloat(product.price) || 0,
+                            currency: 'EUR'
+                        });
+                    }
+                },
+                handleQcClick(product) {
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'check_qc', {
+                            event_category: 'conversion',
+                            item_list_name: this.currentCategory || 'Global Search',
+                            item_id: product.id || product.name,
+                            item_name: product.name
+                        });
+                    }
+                },
+                trackSearch() {
+                    const keyword = (this.searchQuery || '').trim();
+                    if (keyword !== '' && typeof gtag !== 'undefined') {
+                        gtag('event', 'view_search_results', { search_term: keyword });
+                    }
+                }
+            },
+            mounted() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const catFromUrl = urlParams.get('c');
+
+                fetch('products.json?t=' + new Date().getTime())
+                    .then(res => res.json())
+                    .then(data => {
+                        this.products = Array.isArray(data) ? data : [];
+                        if (catFromUrl && this.dynamicCategories.includes(catFromUrl)) {
+                            this.currentCategory = catFromUrl;
+                        } else {
+                            this.currentCategory = ''; 
+                        }
+                    })
+                    .catch(err => console.error("JSON 加载失败:", err));
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
