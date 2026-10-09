@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QC Images - FIEYEAR</title>
+    <link rel="icon" href="./logo.png" type="image/png">
+    <link rel="stylesheet" href="./style.css">
+    
+    <!-- 杀手锏：直接把 QC 页面的核心排版强制写在这里，彻底无视浏览器 CSS 缓存 -->
+    <style>
+        body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f6f8; color: #333333; }
+        a { text-decoration: none; color: inherit; }
+        
+        .qc-header { position: sticky; top: 0; padding: 12px 15px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 100; min-height: 54px; box-sizing: border-box; }
+        .qc-header h1 { margin: 0 10px; font-size: 16px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: center; }
+        .back-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #4b5563; text-decoration: none; background: #f4f5f8; padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .back-btn:hover { background: white; border-color: rgba(59, 130, 246, 0.3); color: #3b82f6; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.1); }
+        .header-spacer { width: 75px; flex-shrink: 0; }
+
+        .gallery { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 30px; max-width: 800px; margin: 0 auto; }
+        .qc-item { width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); box-sizing: border-box; }
+        .qc-img { width: 100%; height: auto; border-radius: 8px; display: block; }
+        .loader { margin-top: 100px; font-size: 16px; color: #888; text-align: center;}
+    </style>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部吸顶导航栏 -->
+        <header class="qc-header">
+            <a href="#" @click.prevent="goBack" class="back-btn">
+                <!-- 双重保险：直接给图标写死宽高 -->
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 4px;">
+                    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back
+            </a>
+            <h1>{{ product ? product.name : 'Loading...' }}</h1>
+            <div class="header-spacer"></div>
+        </header>
+
+        <!-- 居中的相册主容器 -->
+        <main class="gallery" v-if="product">
+            <div class="qc-item" v-for="(url, index) in product.qcUrls" :key="index">
+                <img :src="url" loading="lazy" class="qc-img" :alt="product.name + ' QC'">
+            </div>
+            <div v-if="!product.qcUrls || product.qcUrls.length === 0" class="loader">
+                该商品暂无质检图片记录。
+            </div>
+        </main>
+        
+        <main class="gallery" v-else>
+            <div class="loader">
+                <p v-if="error">{{ error }}</p>
+                <p v-else>正在加载质检图数据...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    product: null,
+                    error: ''
+                }
+            },
+            methods: {
+                goBack() {
+                    if (window.history.length > 1) { 
+                        history.back(); 
+                    } else { 
+                        location.href = 'index.html'; 
+                    }
+                }
+            },
+            mounted() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const pid = urlParams.get('id');
+                
+                if (!pid) {
+                    this.error = "无效的商品 ID，请返回重试。";
+                    return;
+                }
+                
+                const timestamp = new Date().getTime();
+                fetch('products.json?t=' + timestamp)
+                    .then(res => res.json())
+                    .then(data => {
+                        const found = data.find(p => String(p.id) === String(pid));
+                        if (found) {
+                            this.product = found;
+                            document.title = found.name + " - QC";
+                        } else {
+                            this.error = "在数据库中未找到该商品的记录。";
+                        }
+                    })
+                    .catch(err => {
+                        this.error = "网络请求失败或数据异常，请刷新重试。";
+                        console.error(err);
+                    });
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
