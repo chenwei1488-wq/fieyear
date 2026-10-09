@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cosmo(fieyearn3) - Your Trusted Sheet with QC</title>
+    <link rel="icon" href="./logo.png" type="image/png">
+    <link rel="stylesheet" href="./style.css?v=3.0">
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BFH3VPLTPC"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      gtag('config', 'G-BFH3VPLTPC', {
+          'influencer_name': 'cosmo(fieyearn3)'
+      });
+    </script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="sticky-header">
+            
+            <!-- 顶部核心区域：搜索框与按钮 -->
+            <header class="header-container" v-if="!currentCategory">
+                
+                <!-- 1. 全局商品搜索框：当不在 TIKTOK 容器时显示 -->
+                <div class="search-box" v-if="activeTab !== 'TIKTOK'">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" v-model="searchQuery" placeholder="Search all products..." @keyup.enter="trackSearch" @blur="trackSearch">
+                </div>
+
+                <!-- 2. TIKTOK 专属链接搜索框：加入了解析时的加载状态反馈 -->
+                <div class="search-box tiktok-search" v-if="activeTab === 'TIKTOK'">
+                    <span class="search-icon" style="color: #111;" v-if="!isParsingTikTok">🔗</span>
+                    <span class="search-icon" style="color: #e6a23c; animation: spin 2s linear infinite;" v-else>⏳</span>
+                    <input type="text" 
+                           v-model="tiktokSearchQuery" 
+                           :disabled="isParsingTikTok"
+                           :style="isParsingTikTok ? 'background-color: #f5f7fa; color: #909399;' : ''"
+                           :placeholder="isParsingTikTok ? 'Analysing TikTok link via Cloud...' : 'Paste video link here to find products...'">
+                </div>
+                
+                <!-- 右侧功能按钮 (全局保留，已恢复动态渲染标签) -->
+                <div class="action-buttons">
+                    <a href="https://www.lovegobuy.com/login/signup?invite_code=U97E9E" class="btn btn-invite" target="_blank">
+                        <span>🎁 S'inscrire sur Lovegobuy pour -30%</span>
+                    </a>
+                    <a href="https://vm.tiktok.com/ZN8rQBMnQ/" class="btn btn-tutorial" target="_blank">
+                        <span>📚 Tutoriel</span>
+                    </a>
+                </div>
+            </header>
+
+            <div class="category-page-header" v-else>
+                <a href="?" class="btn-back-home" @click.prevent="goHome">
+                    <span>⬅️</span> Back
+                </a>
+                
+                <h1 class="category-title">{{ currentCategory }}</h1>
+                
+                <div class="cat-search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" v-model="catSearchQuery" :placeholder="'Search in ' + currentCategory + '...'">
+                </div>
+            </div>
+
+            <!-- 二级类目筛选栏：仅在 ALL 容器下展示 -->
+            <div class="sub-category-bar" v-if="activeTab === 'ALL' && currentCategory && availableSubCategories.length > 0">
+                <button 
+                    :class="['sub-cat-btn', { active: currentSubCategory === '' }]" 
+                    @click="currentSubCategory = ''">
+                    All
+                </button>
+                <button 
+                    v-for="sub in availableSubCategories" 
+                    :key="sub" 
+                    :class="['sub-cat-btn', { active: currentSubCategory === sub }]" 
+                    @click="currentSubCategory = sub">
+                    {{ sub }}
+                </button>
+            </div>
+
+            <!-- 一级分类过滤器 -->
+            <nav class="filter-container" v-if="activeTab === 'ALL' && !currentCategory">
+                <button @click="goHome" :class="['filter-btn', { active: currentCategory === '' }]">
+                    <span class="cat-icon">🏠</span> ALL
+                </button>
+                <button v-for="cat in dynamicCategories" :key="cat" @click="jumpToCategoryPage(cat)" class="filter-btn">
+                    <span class="cat-icon" v-if="getCategoryIcon(cat)">{{ getCategoryIcon(cat) }}</span> {{ cat }}
+                </button>
+            </nav>
+        </div>
+
+        <main class="grid-container">
+            <div v-for="(product, index) in filteredProducts" :key="index" class="product-card" :data-letter="getProductLetter(product.name)">
+                <a :href="product.productLink" target="_blank" style="display:block;" @click="trackProductClick(product)">
+                    <div class="product-content">
+                        <div class="image-box">
+                            <img :src="product.imgUrl" :alt="product.name" class="product-img" loading="lazy">
+                        </div>
+                        <div class="info-box">
+                            <h3 class="product-title">{{ product.name }}</h3>
+                            <p class="product-price">{{ product.symbol || '€' }}{{ product.price }}</p>
+                        </div>
+                    </div>
+                </a>
+                <div class="qc-btn-container" @click.stop>
+                    <!-- 正常商品的 QC 按钮 -->
+                    <a v-if="activeTab !== 'RESELL' && product.qcUrls && product.qcUrls.length > 0" :href="'qc.html?id=' + product.id" class="btn-check-more" @click="handleQcClick(product)">
+                        <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; margin-bottom:-2px; vertical-align: middle;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Check QC ({{ product.qcUrls.length }})
+                    </a>
+
+                    <!-- RESELL 商品的联系买家和购买按钮 -->
+                    <div class="resell-actions" v-if="activeTab === 'RESELL'">
+                        <a :href="product.productLink" target="_blank" class="btn-buy-now">Acheter</a>
+                        <button class="btn-contact-seller" @click="alertDiscord(product.sellerDiscord)">Vendeur</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 空状态处理 -->
+            <div v-if="filteredProducts.length === 0" style="text-align: center; grid-column: 1 / -1; padding: 60px 20px; color: #909399;">
+                <h2 style="font-size: 24px; margin-bottom: 10px;">
+                    {{ isParsingTikTok ? 'Scanning video... 🔍' : 'No products found 🛒' }}
+                </h2>
+                <p v-if="activeTab === 'TIKTOK'">
+                    {{ isParsingTikTok ? 'Please wait a moment while we fetch the products.' : 'Please paste a valid video link to search.' }}
+                </p>
+                <p v-else>Try adjusting your search keywords or switch tabs.</p>
+            </div>
+        </main>
+
+        <!-- 申请成为卖家 / 发布闲置 悬浮按钮 -->
+        <div class="floating-seller-btn" v-if="activeTab === 'RESELL'">
+            <button class="btn-become-seller" @click="showApplyModal = true">Devenir Vendeur</button>
+            <button class="btn-post-resell" @click="showPostModal = true">Vendre vos objets de seconde main</button>
+        </div>
+
+        <!-- 申请成为卖家 弹窗 -->
+        <div class="modal-overlay" v-if="showApplyModal" @click="showApplyModal = false">
+            <div class="modal-content" @click.stop>
+                <span class="close-modal-btn" @click="showApplyModal = false">&times;</span>
+                
+                <h3>Devenir Vendeur</h3>
+                <p>Veuillez contacter l'administrateur ci-dessous</p>
+                <div class="discord-box">Discord ID: <b>heys.one</b></div>
+                <button class="btn-close-modal" @click="showApplyModal = false">J'ai compris</button>
+            </div>
+        </div>
+
+        <!-- 发布闲置商品 弹窗 (图二UI) -->
+        <div class="modal-overlay" v-if="showPostModal" @click="showPostModal = false">
+            <div class="modal-content resell-form-box" @click.stop>
+                <span class="close-modal-btn" @click="showPostModal = false">&times;</span>
+                
+                <h3>Vendre vos objets de seconde main</h3>
+                <input type="text" v-model="resellForm.key" placeholder="Mot de passe de publication (à demander à l'administrateur)" class="form-input">
+                <input type="text" v-model="resellForm.name" placeholder="Titre / Nom de l'article" class="form-input">
+                <textarea v-model="resellForm.desc" placeholder="Décrivez la marque, le modèle, l'origine de votre article..." class="form-textarea"></textarea>
+                <input type="text" v-model="resellForm.img" placeholder="Lien de l'image de l'article (URL)" class="form-input">
+                <input type="text" v-model="resellForm.price" placeholder="Prix (ex. : 100 €)" class="form-input">
+                <input type="text" v-model="resellForm.link" placeholder="Lien d'achat de votre plateforme de seconde main" class="form-input">
+                <input type="text" v-model="resellForm.discord" placeholder="Discord (pour le contact avec les acheteurs)" class="form-input">
+                
+                <button class="btn-submit-post" @click="submitResellPost" :disabled="isSubmitting">
+                    {{ isSubmitting ? 'Publication en cours...' : 'Publier maintenant' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- ====== 新增：欢迎介绍与最新优惠弹窗 (图一风格) ====== -->
+        <div class="promo-popup-overlay" v-if="showPromoPopup" @click="closePromoPopup">
+            <div class="promo-popup-wrapper" @click.stop>
+                <div class="promo-card">
+                    <!-- 上半部分：品牌/达人自我介绍 + 图二 Logo -->
+                    <div class="promo-top">
+                        <div class="promo-welcome-info">
+                            <span class="promo-welcome-sub">WELCOME TO</span>
+                            <h4 class="promo-brand-name">cosmo(fieyearn3)</h4>
+                            <span class="promo-slogan">✨ Just For Best Quality</span>
+                        </div>
+                        <img src="./logo.png" alt="Logo" class="promo-logo-img">
+                    </div>
+
+                    <!-- 下半部分：核心优惠展示区 + 跳转按钮 -->
+                    <div class="promo-bottom">
+                        <div class="promo-discount-tag">EXCLUSIVE OFFER</div>
+                        <div class="promo-big-title">
+                            <span class="highlight-num">-30%</span> OFF
+                        </div>
+                        <div class="promo-sub-title">Shipping & Coupons</div>
+                        
+                        <a href="https://www.lovegobuy.com/login/signup?invite_code=U97E9E" target="_blank" class="promo-cta-btn" @click="closePromoPopup">
+                            Try It Now ➔
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 底部独立圆形关闭按钮 -->
+                <button class="promo-close-circle" @click="closePromoPopup">&times;</button>
+            </div>
+        </div>
+
+        <!-- 底部容器导航栏 -->
+        <nav class="bottom-tab-bar">
+            <div class="tab-item" :class="{ 'active': activeTab === 'TIKTOK' }" @click="switchContainer('TIKTOK')">
+                <span class="tab-name">TIKTOK</span>
+            </div>
+            
+            <div class="tab-item center-tab" :class="{ 'active': activeTab === 'ALL' }" @click="switchContainer('ALL')">
+                <div class="center-circle">
+                    <span class="tab-name">ALL</span>
+                </div>
+            </div>
+            
+            <div class="tab-item" :class="{ 'active': activeTab === 'RESELL' }" @click="switchContainer('RESELL')">
+                <span class="tab-name">RESELL</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- 为⏳图标与弹窗增加动画、居中与电脑端大屏适配样式 -->
+    <style>
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes popupZoom {
+            0% { opacity: 0; transform: scale(0.85) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(3deg); }
+        }
+
+        /* 遮罩层 */
+        .promo-popup-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        /* 弹窗外框（默认手机端尺寸） */
+        .promo-popup-wrapper {
+            width: 310px;
+            max-width: 88vw;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            animation: popupZoom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 弹窗主体容器 */
+        .promo-card {
+            width: 100%;
+            margin: 0 auto !important;
+            border-radius: 26px;
+            overflow: visible;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* 上半层：左文右图设计 */
+        .promo-top {
+            background: linear-gradient(135deg, #ffffff 0%, #f4f5f7 100%);
+            padding: 24px 22px 38px 22px;
+            border-radius: 26px 26px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .promo-welcome-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .promo-welcome-sub {
+            font-size: 11px;
+            font-weight: 800;
+            color: #909399;
+            letter-spacing: 1.2px;
+        }
+
+        .promo-brand-name {
+            font-size: 20px;
+            font-weight: 900;
+            color: #111;
+            margin: 3px 0 8px 0;
+        }
+
+        .promo-slogan {
+            display: inline-block;
+            background: #ffeef0;
+            color: #ff4757;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 71, 87, 0.2);
+        }
+
+        .promo-logo-img {
+            width: 64px;
+            height: 64px;
+            flex-shrink: 0;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 18px;
+            padding: 6px;
+            box-sizing: border-box;
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.18);
+            animation: floatLogo 3s ease-in-out infinite;
+        }
+
+        /* 下半层：深色叠放卡片 */
+        .promo-bottom {
+            background: linear-gradient(160deg, #1e1e24 0%, #111115 100%);
+            color: #fff;
+            padding: 26px 22px 24px 22px;
+            border-radius: 24px;
+            margin-top: -22px;
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-sizing: border-box;
+        }
+
+        .promo-discount-tag {
+            font-size: 10px;
+            font-weight: 800;
+            color: #ff6b81;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .promo-big-title {
+            font-size: 40px;
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -1px;
+            margin-bottom: 4px;
+            text-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .promo-big-title .highlight-num {
+            background: linear-gradient(135deg, #ff4757 0%, #ff8f50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .promo-sub-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        /* 底部主按钮 */
+        .promo-cta-btn {
+            display: block;
+            width: 85%;
+            margin: 0 auto;
+            padding: 12px 0;
+            background: linear-gradient(90deg, #ff4757 0%, #ff6b81 100%);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 800;
+            text-decoration: none;
+            border-radius: 30px;
+            box-shadow: 0 8px 20px rgba(255, 71, 87, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .promo-cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.55);
+        }
+
+        /* 底部独立关闭圆钮 */
+        .promo-close-circle {
+            margin: 18px auto 0 auto !important;
+            padding: 0 !important;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.6);
+            color: #fff;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: all 0.2s;
+        }
+
+        .promo-close-circle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        /* =========================================================
+           💻 电脑端大屏幕专属放大样式 (屏幕宽度 >= 768px 时自动生效)
+           ========================================================= */
+        @media (min-width: 768px) {
+            .promo-popup-wrapper {
+                width: 440px; /* 电脑端宽度从 310px 放大到 440px */
+            }
+            .promo-card {
+                border-radius: 34px;
+            }
+            .promo-top {
+                padding: 34px 34px 52px 34px;
+                border-radius: 34px 34px 0 0;
+            }
+            .promo-welcome-sub {
+                font-size: 14px;
+                letter-spacing: 1.8px;
+            }
+            .promo-brand-name {
+                font-size: 28px;
+                margin: 5px 0 12px 0;
+            }
+            .promo-slogan {
+                font-size: 15px;
+                padding: 6px 16px;
+            }
+            .promo-logo-img {
+                width: 88px;
+                height: 88px;
+                border-radius: 24px;
+                padding: 8px;
+            }
+            .promo-bottom {
+                padding: 36px 34px 34px 34px;
+                border-radius: 32px;
+                margin-top: -28px;
+            }
+            .promo-discount-tag {
+                font-size: 13px;
+                letter-spacing: 2.5px;
+                margin-bottom: 6px;
+            }
+            .promo-big-title {
+                font-size: 56px; /* -30% OFF 超大号视觉冲击 */
+                margin-bottom: 6px;
+            }
+            .promo-sub-title {
+                font-size: 24px;
+                margin-bottom: 28px;
+            }
+            .promo-cta-btn {
+                padding: 16px 0;
+                font-size: 19px;
+                border-radius: 40px;
+            }
+            .promo-close-circle {
+                margin-top: 24px !important;
+                width: 44px;
+                height: 44px;
+                font-size: 26px;
+            }
+        }
+    </style>
+
+    <script>
+        const { createApp } = Vue;
+        
+        let categoryData = [];
+        try {
+            const injectedData = [{"name": "🆕Nouveautés", "subCategories": []}, {"name": "🔥HOT", "subCategories": []}, {"name": "👟SHOES", "subCategories": [{"name": "Asics"}, {"name": "Autres"}, {"name": "Balenciaga"}, {"name": "Chanel"}, {"name": "Dior"}, {"name": "Lv"}, {"name": "New Balance"}, {"name": "Nike"}, {"name": "Off White"}, {"name": "On"}, {"name": "Rick Owens"}, {"name": "Saucony"}, {"name": "Yeezy"}]}, {"name": "❄️VESTE", "subCategories": [{"name": "Autres"}, {"name": "Burberry"}, {"name": "C.P. Company"}, {"name": "Canada Goose"}, {"name": "Moncler"}, {"name": "Nike"}, {"name": "Ralph Lauren"}]}, {"name": "🥼VETEMENT", "subCategories": [{"name": "Ensemble"}, {"name": "Jeans"}, {"name": "Jogging"}, {"name": "Longues"}, {"name": "Pull"}, {"name": "Sweat"}]}, {"name": "☀️ETE", "subCategories": [{"name": "Ensemble"}, {"name": "Shorts"}, {"name": "Tee"}]}, {"name": "⛹️Maillot", "subCategories": []}, {"name": "🏃RUNNING", "subCategories": [{"name": "Asics"}, {"name": "Autres"}, {"name": "Nike"}, {"name": "Under Armour"}]}, {"name": "🎧Électronique", "subCategories": []}, {"name": "👓ACCESSOIRE", "subCategories": [{"name": "Autres"}, {"name": "Bijoux"}, {"name": "Ceinture"}, {"name": "Chapeau"}, {"name": "Joujou"}, {"name": "Lunettes"}, {"name": "Sacs"}, {"name": "Sous-vêtements et chaussettes"}]}, {"name": "♀️WOMAN", "subCategories": []}]; // 这里保持你后端的模板渲染标签
+            if (Array.isArray(injectedData) && injectedData.length > 0 && typeof injectedData[0] !== 'string') {
+                categoryData = injectedData;
+            }
+        } catch (e) {
+            console.warn("分类数据加载失败:", e);
+        }
+
+        createApp({
+            data() {
+                return {
+                    products: [], 
+                    searchQuery: '',      
+                    catSearchQuery: '',   
+                    currentCategory: '',
+                    currentSubCategory: '',
+                    activeTab: 'ALL', 
+                    
+                    // TikTok 专属状态
+                    tiktokSearchQuery: '', 
+                    parsedTikTokId: '',       
+                    isParsingTikTok: false,
+
+                    // ====== 二手发帖与欢迎弹窗相关的状态 ======
+                    showApplyModal: false,
+                    showPostModal: false,
+                    showPromoPopup: false,
+                    isSubmitting: false,
+                    resellForm: { key: '', name: '', desc: '', img: '', price: '', link: '', discord: '' }
+                }
+            },
+            watch: {
+                // 监听用户粘贴链接的动作
+                tiktokSearchQuery(newVal) {
+                    const val = newVal.trim();
+                    this.parsedTikTokId = ''; 
+                    this.isParsingTikTok = false;
+
+                    // 如果发现包含 http，说明粘贴了短链或长链
+                    if (val.includes('http')) {
+                        // 【✨ 新增超强优化：本地秒解长链接】
+                        // 如果链接里已经自带 /video/数字，直接本地截取，不需要请求云端！
+                        const match = val.match(/\/video\/(\d+)/);
+                        if (match && match[1]) {
+                            this.parsedTikTokId = match[1];
+                            return; // 直接出结果，退出函数
+                        }
+
+                        // 如果本地没找到数字（说明是短链接），再请求云端
+                        this.isParsingTikTok = true;
+                        
+                        // ⚠️ 注意：短链解析必须在部署到 Cloudflare 后才会生效！本地测试会报错。
+                        fetch(`/api/get-tk-id?url=${encodeURIComponent(val)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success && data.videoId) {
+                                    this.parsedTikTokId = data.videoId;
+                                } else {
+                                    console.warn("TikTok Parse Failed:", data.error);
+                                }
+                            })
+                            .catch(err => {
+                                console.error("API 请求失败 (请确认已部署到 Cloudflare 云端):", err);
+                            })
+                            .finally(() => {
+                                this.isParsingTikTok = false;
+                            });
+                    }
+                }
+            },
+            computed: {
+                dynamicCategories() { 
+                    return categoryData.map(c => c.name); 
+                },
+                
+                availableSubCategories() {
+                    if (!this.currentCategory) return [];
+                    const currentCatObj = categoryData.find(c => c.name === this.currentCategory);
+                    if (currentCatObj && currentCatObj.subCategories && currentCatObj.subCategories.length > 0) {
+                        return currentCatObj.subCategories.map(sub => sub.name);
+                    }
+                    
+                    const subs = this.products
+                        .filter(p => p.category === this.currentCategory && p.subCategory)
+                        .map(p => p.subCategory);
+                    return [...new Set(subs)];
+                },
+                
+                filteredProducts() {
+                    let baseProducts = this.products;
+
+                    // ==========================================
+                    // 1. TIKTOK 容器专属逻辑
+                    // ==========================================
+                    if (this.activeTab === 'TIKTOK') {
+                        // 正在云端解析时，清空屏幕展示动画
+                        if (this.isParsingTikTok) return [];
+
+                        const tkQuery = (this.tiktokSearchQuery || '').trim();
+                        
+                        // 场景 A: 拿到确切的视频 ID (长链本地提取 或 短链云端解析成功)
+                        if (this.parsedTikTokId) {
+                            return baseProducts.filter(p => p.tiktokVideoIds && p.tiktokVideoIds.includes(this.parsedTikTokId));
+                        }
+
+                        // 场景 B: 包含 http 但没拿到 ID (短链且云端请求失败，比如在本地测试时)
+                        if (tkQuery.includes('http')) {
+                            return []; // 直接展示 No products found
+                        }
+
+                        // 场景 C: 买家直接手打了纯数字或普通文字模糊搜索
+                        if (tkQuery) {
+                            const lowerQuery = tkQuery.toLowerCase();
+                            return baseProducts.filter(p => {
+                                const nameMatch = p.name && p.name.toLowerCase().includes(lowerQuery);
+                                const idMatch = p.tiktokVideoIds && p.tiktokVideoIds.some(id => id.includes(lowerQuery));
+                                return nameMatch || idMatch;
+                            });
+                        }
+
+                        // 场景 D: 搜索框为空时，默认展示所有绑定了 TikTok ID 的商品
+                        return baseProducts.filter(p => p.tiktokVideoIds && p.tiktokVideoIds.length > 0);
+                    }
+
+                    // 2. RESELL 容器专属逻辑
+                    if (this.activeTab === 'RESELL') {
+                        let resellProducts = baseProducts.filter(p => p.container === 'RESELL');
+                        if (resellProducts.length === 0) return []; 
+                        return resellProducts;
+                    }
+
+                    // 3. ALL 容器逻辑
+                    if (!this.currentCategory) {
+                        const globalQ = (this.searchQuery || '').toLowerCase().trim();
+                        if (globalQ) {
+                            return baseProducts.filter(p => (p.name || '').toLowerCase().includes(globalQ));
+                        }
+                        return baseProducts;
+                    }
+                    
+                    let result = baseProducts.filter(p => p.category === this.currentCategory);
+                    
+                    if (this.currentSubCategory) {
+                        result = result.filter(p => p.subCategory === this.currentSubCategory);
+                    }
+                    
+                    const catQ = (this.catSearchQuery || '').toLowerCase().trim();
+                    if (catQ) {
+                        result = result.filter(p => (p.name || '').toLowerCase().includes(catQ));
+                    }
+                    
+                    return result;
+                }
+            },
+            methods: {
+                jumpToCategoryPage(cat) {
+                    window.location.href = "?c=" + encodeURIComponent(cat);
+                },
+                goHome() {
+                    window.location.href = window.location.pathname;
+                },
+                getCategoryIcon(cat) {
+                    return '';
+                },
+                getProductLetter(name) {
+                    if (!name) return '#';
+                    const firstChar = name.charAt(0).toUpperCase();
+                    return /[A-Z]/.test(firstChar) ? firstChar : '#';
+                },
+                trackProductClick(product) {
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'product_interested', {
+                            event_category: 'engagement',
+                            item_list_name: this.currentCategory || 'Global Search',
+                            item_id: product.id || product.name,
+                            item_name: product.name,
+                            price: parseFloat(product.price) || 0,
+                            currency: 'EUR'
+                        });
+                    }
+                },
+                handleQcClick(product) {
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'check_qc', {
+                            event_category: 'conversion',
+                            item_list_name: this.currentCategory || 'Global Search',
+                            item_id: product.id || product.name,
+                            item_name: product.name
+                        });
+                    }
+                },
+                trackSearch() {
+                    const keyword = (this.searchQuery || '').trim();
+                    if (keyword !== '' && typeof gtag !== 'undefined') {
+                        gtag('event', 'view_search_results', { search_term: keyword });
+                    }
+                },
+                switchContainer(tabName) {
+                    this.activeTab = tabName;
+                    this.currentCategory = ''; 
+                    this.currentSubCategory = '';
+                    this.searchQuery = '';
+                    this.catSearchQuery = '';
+                    
+                    // 切换标签页时重置 TikTok 相关状态
+                    this.tiktokSearchQuery = ''; 
+                    this.parsedTikTokId = '';
+                    this.isParsingTikTok = false;
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                // 关闭欢迎与优惠弹窗
+                closePromoPopup() {
+                    this.showPromoPopup = false;
+                    sessionStorage.setItem('promo_seen', '1');
+                },
+
+                // ====== 二手专属功能 ======
+                alertDiscord(discordId) {
+                    alert("Discord du vendeur：\n" + discordId);
+                },
+                async submitResellPost() {
+                    if (!this.resellForm.key || !this.resellForm.name || !this.resellForm.img) {
+                        alert("Veuillez remplir au moins la clé secrète, le titre et le lien de l'image !");
+                        return;
+                    }
+                    this.isSubmitting = true;
+                    try {
+                        // 确保这里是你真实的 Cloudflare Worker 链接
+                        const workerUrl = "https://resell-api.ww-4b9.workers.dev/submit";
+                        const res = await fetch(workerUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(this.resellForm)
+                        });
+                        const result = await res.json();
+                        
+                        if (result.success) {
+                            alert("Publication réussie ! Elle sera affichée sur la page d'accueil après validation par l'administrateur.");
+                            this.showPostModal = false;
+                            this.resellForm = { key: '', name: '', desc: '', img: '', price: '', link: '', discord: '' };
+                        } else {
+                            alert("Échec de la publication " + result.error);
+                        }
+                    } catch (err) {
+                        alert("Échec de la requête réseau. Veuillez vérifier votre connexion internet.");
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            },
+            mounted() {
+                // 首次进入页面弹出欢迎优惠卡片（同一会话关闭后不再重复弹出）
+                if (!sessionStorage.getItem('promo_seen')) {
+                    this.showPromoPopup = true;
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const catFromUrl = urlParams.get('c');
+
+                fetch('products.json?t=' + new Date().getTime())
+                    .then(res => res.json())
+                    .then(data => {
+                        this.products = Array.isArray(data) ? data : [];
+                        if (catFromUrl && this.dynamicCategories.includes(catFromUrl)) {
+                            this.currentCategory = catFromUrl;
+                            this.currentSubCategory = ''; 
+                        } else {
+                            this.currentCategory = ''; 
+                        }
+                    })
+                    .catch(err => console.error("JSON 加载失败:", err));
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
