@@ -22,7 +22,7 @@ from jinja2 import Environment, FileSystemLoader
 import boto3
 from botocore.config import Config
 from PIL import Image
-from rembg import remove
+# from rembg import remove
 from dotenv import load_dotenv
 
 # 加载 .env 文件
