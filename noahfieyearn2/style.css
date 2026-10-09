@@ -1,0 +1,332 @@
+/* ================= 基础全局变量 ================= */
+:root { 
+    --bg-color: #f5f6f8; 
+    --primary-red: #ff4d4f; 
+    --primary-blue: #3b82f6; 
+    --primary-green: #67c23a;
+    --text-main: #333333; 
+    --text-sub: #888888; 
+    --border-color: #ebeef5;
+}
+body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); }
+a { text-decoration: none; color: inherit; }
+
+/* ================= 头部导航区域 (PC端/全局) ================= */
+.sticky-header { 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    background-color: var(--bg-color); 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+    padding-bottom: 5px; 
+}
+
+.header-container { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 20px 40px; 
+    gap: 20px; 
+    flex-wrap: nowrap; 
+}
+
+/* 通用搜索框容器布局 */
+.search-box { 
+    flex: 1; 
+    position: relative; 
+    min-width: 250px; 
+}
+
+/* 全局普通搜索框样式 */
+.search-box input { 
+    width: 100%; 
+    padding: 12px 20px 12px 40px; 
+    border-radius: 25px; 
+    border: 1px solid #e5e7eb; 
+    outline: none; 
+    font-size: 14px; 
+    box-sizing: border-box; 
+    transition: box-shadow 0.3s; 
+}
+.search-box input:focus { 
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+    border-color: #93c5fd; 
+}
+.search-icon { 
+    position: absolute; 
+    left: 15px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    color: var(--text-sub); 
+}
+
+/* TIKTOK 专属搜索框重载样式 */
+.tiktok-search input {
+    border: 2px solid #111111;
+    border-radius: 8px; /* TikTok风格偏向圆角矩形 */
+}
+.tiktok-search input:focus {
+    border-color: #fe2c55; /* TikTok 红 */
+    box-shadow: 0 0 0 3px rgba(254, 44, 85, 0.1);
+}
+
+/* 按钮区 */
+.action-buttons { display: flex; gap: 12px; flex-shrink: 0; align-items: center;}
+.btn { padding: 10px 22px; border-radius: 25px; font-weight: bold; font-size: 14px; transition: transform 0.2s, opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+.btn-invite { background: linear-gradient(135deg, #ff6b6b, #ff4d4f); color: white; box-shadow: 0 4px 10px rgba(255, 77, 79, 0.3); border: 2px solid transparent; }
+.btn-tutorial { background: white; color: var(--primary-blue); border: 2px solid var(--primary-blue); }
+
+/* ================= 独立子页面头部 (分类页) ================= */
+.category-page-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 40px; background-color: var(--bg-color); }
+.btn-back-home { padding: 8px 16px; background: #ffffff; border: 1px solid #dcdfe6; border-radius: 20px; cursor: pointer; font-weight: bold; color: #333; display: flex; align-items: center; gap: 4px; text-decoration: none; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.category-title { font-size: 20px; font-weight: 900; color: #1a1a1a; text-transform: uppercase; margin: 0; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+.cat-search-wrapper { position: relative; width: 250px; }
+.cat-search-wrapper input { width: 100%; padding: 10px 15px 10px 35px; border: 1px solid #e5e7eb; border-radius: 25px; outline: none; font-size: 14px; box-sizing: border-box; background-color: #ffffff; }
+.cat-search-wrapper input:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); border-color: #93c5fd; }
+.cat-search-wrapper .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-sub); font-size: 14px; }
+
+/* ================= 二级类目过滤器条 ================= */
+.sub-category-bar {
+    display: flex;
+    gap: 12px;
+    padding: 10px 40px; 
+    background-color: var(--bg-color);
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none; 
+}
+.sub-category-bar::-webkit-scrollbar { display: none; }
+
+.sub-cat-btn {
+    padding: 6px 18px;
+    border: 1px solid #dcdfe6;
+    border-radius: 20px;
+    background-color: #ffffff;
+    color: #606266;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.sub-cat-btn:hover {
+    background-color: #f5f7fa;
+    color: var(--primary-blue);
+    border-color: #c6e2ff;
+}
+
+.sub-cat-btn.active {
+    background-color: var(--primary-blue);
+    color: #ffffff;
+    border-color: var(--primary-blue);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+}
+
+/* ================= 一级分类过滤器 ================= */
+.filter-container { padding: 5px 40px 15px; display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; }
+.filter-container::-webkit-scrollbar { display: none; }
+.filter-btn { padding: 10px 24px; border-radius: 25px; background: white; border: 1px solid #e5e7eb; color: var(--text-main); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); font-size: 14px; text-transform: uppercase; }
+.filter-btn:hover { border-color: var(--primary-blue); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.12); }
+.filter-btn.active { background: #1a1a1a; color: white; border-color: #1a1a1a; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
+.cat-icon { font-size: 16px; line-height: 1; }
+
+/* ================= 商品网格 ================= */
+.grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 10px 40px 40px; }
+.product-card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid transparent; height: 100%; }
+.product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: var(--border-color); }
+.product-card > a { display: flex; flex-direction: column; flex: 1; color: inherit; text-decoration: none; }
+.product-content { display: flex; flex-direction: column; flex: 1; }
+.image-box { width: 100%; padding-top: 100%; position: relative; background-color: #f9fafb; }
+.product-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; padding: 10px; box-sizing: border-box; }
+.info-box { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; }
+.product-title { font-size: 14px; color: var(--text-main); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+.product-price { font-size: 16px; font-weight: bold; color: var(--primary-red); margin: 0; white-space: nowrap; }
+
+/* ================= QC 按钮 ================= */
+.qc-btn-container { padding: 10px 15px 15px; text-align: center; }
+.btn-check-more { width: 100%; padding: 9px 0; background: #f4f5f8; color: #4b5563; border: 1px solid transparent; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; justify-content: center; align-items: center; gap: 6px; box-sizing: border-box; text-decoration: none; }
+.btn-check-more:hover { background: #ffffff; color: var(--primary-blue); border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.12); transform: translateY(-2px); }
+.btn-check-more svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ================= 质检图相册 (qc.html) ================= */
+.qc-header { position: sticky; top: 0; padding: 12px 15px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 100; min-height: 54px; box-sizing: border-box; }
+.qc-header h1 { margin: 0 10px; font-size: 16px; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; text-align: center; }
+.back-btn { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #4b5563; text-decoration: none; background: #f4f5f8; padding: 8px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid transparent; transition: all 0.2s; white-space: nowrap; }
+.back-btn svg { width: 16px; height: 16px; margin-right: 4px; }
+.back-btn:hover { background: white; border-color: rgba(59, 130, 246, 0.3); color: #3b82f6; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.1); }
+.header-spacer { width: 75px; flex-shrink: 0; }
+
+.gallery { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 30px; max-width: 800px; margin: 0 auto; }
+.qc-item { width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); box-sizing: border-box; }
+.qc-img { width: 100%; height: auto; border-radius: 8px; display: block; }
+.loader { margin-top: 100px; font-size: 16px; color: #888; text-align: center;}
+
+/* ================= 无缝底部导航栏 ================= */
+.bottom-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+    flex: 1;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-item.active {
+    color: var(--primary-red);
+}
+
+.tab-name {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+/* 中间 ALL 容器的专属凸起样式 */
+.center-tab {
+    position: relative;
+    top: -15px;
+}
+
+.center-circle {
+    width: 60px;
+    height: 60px;
+    background-color: #ffffff;
+    color: #909399;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border: 5px solid #f5f6f8; 
+    transition: all 0.3s ease;
+}
+
+.center-tab.active .center-circle {
+    background-color: var(--primary-red);
+    color: white;
+    border-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+}
+
+.center-tab .tab-name {
+    font-size: 14px;
+}
+
+/* ================= 响应式调整 (手机端) ================= */
+@media (max-width: 768px) {
+    .header-container { flex-direction: column; padding: 15px; gap: 15px; }
+    .search-box { width: 100%; min-width: unset; }
+    .action-buttons { width: 100%; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    
+    .btn { 
+        flex: 1; 
+        min-width: 140px; 
+        padding: 10px; 
+        font-size: 13px; 
+        white-space: normal;  
+        line-height: 1.4; 
+        text-align: center;
+    }
+    
+    .category-page-header { padding: 10px 15px; gap: 10px; }
+    .category-title { display: none; }
+    .cat-search-wrapper { width: 100%; flex-grow: 1; }
+
+    .sub-category-bar { padding: 5px 15px 10px; }
+    .filter-container { padding: 5px 15px 15px; }
+    
+    /* 防止底部商品被导航栏遮挡，增加下边距 */
+    .grid-container { 
+        padding: 5px 15px 90px; 
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+        gap: 15px; 
+    }
+    
+    .product-title { font-size: 12px; -webkit-line-clamp: 1; }
+    .product-price { font-size: 14px; }
+}
+
+@media (min-width: 769px) {
+    .grid-container {
+        padding-bottom: 90px; 
+    }
+}
+
+/* 修改悬浮发帖按钮区：把 border-radius 从 25px 改小，使其变成长方形 */
+.floating-seller-btn { position: fixed; bottom: 80px; left: 0; width: 100%; display: flex; justify-content: center; gap: 15px; z-index: 900; pointer-events: none; }
+.floating-seller-btn button { 
+    pointer-events: auto; 
+    padding: 10px 20px; 
+    border-radius: 6px; /* 这里从圆角的 25px 改为长方形的 6px */
+    font-weight: bold; 
+    border: none; 
+    cursor: pointer; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    transition: transform 0.2s; 
+}
+.btn-become-seller { background: white; color: #ff4d4f; border: 1px solid #ff4d4f !important; }
+.btn-post-resell { background: #ff4d4f; color: white; }
+
+/* 弹窗样式：为 modal-content 新增 position: relative 以便定位关闭按钮 */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+.modal-content { 
+    position: relative; /* 这是新增的属性 */
+    background: white; 
+    width: 90%; 
+    max-width: 400px; 
+    border-radius: 12px; 
+    padding: 20px; 
+    text-align: center; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+}
+
+/* 新增：弹窗右上角的关闭 X 按钮样式 */
+.close-modal-btn {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    font-size: 26px;
+    color: #909399;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.close-modal-btn:hover {
+    color: #ff4d4f;
+}
+/* 二手发帖表单 */
+.resell-form-box { display: flex; flex-direction: column; gap: 12px; }
+.form-input, .form-textarea { width: 100%; padding: 10px; border: 1px solid #dcdfe6; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+.form-textarea { resize: vertical; min-height: 80px; }
+.btn-submit-post { background: #ff4d4f; color: white; padding: 12px; border-radius: 25px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; transition: opacity 0.2s;}
+.btn-submit-post:hover { opacity: 0.9; }
+
+/* 购买与联系卖家按钮 (图一) */
+.resell-actions { display: flex; gap: 10px; }
+.btn-buy-now { flex: 1; background: #ff4d4f; color: white; padding: 8px 0; border-radius: 20px; font-size: 13px; font-weight: bold; text-align: center; border: none; cursor: pointer;}
+.btn-buy-now:hover { opacity: 0.9; }
+.btn-contact-seller { flex: 1; background: white; color: #333; border: 1px solid #ccc; padding: 8px 0; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; }
