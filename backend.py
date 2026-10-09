@@ -121,23 +121,23 @@ class BackendEngine:
                             qc_urls TEXT)''')
                             
         try: cursor.execute("ALTER TABLE products ADD COLUMN qc_urls TEXT")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN sort_order INTEGER DEFAULT 0")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN source_link TEXT")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN sub_category TEXT DEFAULT ''")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN created_at TEXT")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN parent_product_id INTEGER DEFAULT 0")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         try: cursor.execute("ALTER TABLE products ADD COLUMN status TEXT DEFAULT 'active'")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
         
         # 【新增】：tiktok视频ID，使用逗号分隔存储
         try: cursor.execute("ALTER TABLE products ADD COLUMN tiktok_video_ids TEXT DEFAULT ''")
-        except sqlite3.OperationalError: pass
+        except Exception: pass
 
         cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='categories_v2'")
         if cursor.fetchone()[0] == 0:
