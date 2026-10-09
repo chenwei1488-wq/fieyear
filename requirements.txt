@@ -1,0 +1,10 @@
+streamlit
+pandas
+PyGithub
+libsql-experimental
+python-dotenv
+openpyxl
+Jinja2
+boto3
+Pillow
+rembg
