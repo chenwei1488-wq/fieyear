@@ -7,4 +7,3 @@ openpyxl
 Jinja2
 boto3
 Pillow
-rembg
